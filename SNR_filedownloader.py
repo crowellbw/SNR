@@ -15,7 +15,33 @@ import sys
 #site - 7 digit string of site id, rinex3 convention
 #Rinex3 files are renamed to SITE_YEAR_DOY.rnx
 #####################################################################################
-
+#This subroutine downloads the any sp3 file for a given day from CDDIS
+def getsp3file(year, doy):
+    if not os.path.exists('nav'): #if nav folder doesn't exist, make it
+        os.makedirs('nav')
+    [gpsweek,gpsdow]=SNR_tools.gpsweekdow(int(year),int(doy))
+    week = str(int(gpsweek))
+    dow = str(int(gpsdow))
+    fname = 'nav/igs' + week + dow + '.sp3.Z'
+    fname2 = 'nav/igs' + week + dow + '.sp3'
+    fname3 = 'nav/GBM0MGXRAP_' + year + doy + '0000_01D_05M_ORB.SP3'
+    if (os.path.isfile(fname2) == True):
+        print ('Final orbit file ' + fname2 + ' already exists')
+    else:
+        try:
+            ftps = FTP_TLS(host = 'gdc.cddis.eosdis.nasa.gov')
+            ftps.login(user='anonymous', passwd='snivel@uw.edu')
+            ftps.prot_p()
+            ftps.cwd('gnss/products/' + week + '/')
+            ftps.retrbinary("RETR " + 'igs' + week + dow + '.sp3.Z', open('igs'+ week + dow + '.sp3.Z', 'wb').write)
+            #url = 'ftp://cddis.gsfc.nasa.gov/gnss/products/' + week + '/igs' + week + dow + '.sp3.Z'
+            print('Downloading final orbit file '+fname2)
+            os.system('mv igs'+ week + dow + '.sp3.Z nav')
+            os.system('gunzip' + ' ' + fname)
+            os.system('cp' + ' ' + fname2 + ' ' + fname3 )
+        except Exception:
+            print ('Final orbit not available, trying rapid orbits')
+            
 #This subroutine downloads the multi-GNSS SP3 file from GFZ
 def getsp3GFZMGNSSfile(year, doy):
     if not os.path.exists('nav'): #if nav folder doesn't exist, make it
